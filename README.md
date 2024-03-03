@@ -42,7 +42,7 @@ We welcome contributions from the community! If you have an interesting example 
 1. Fork the repository.
 1. Create a new branch for your contribution (`git checkout -b feature/YourFeature`).
 1. Add your example or demo.
-1. Commit your changes (g`it commit -am 'Add some feature'`).
+1. Commit your changes (`git commit -am 'Add some feature'`).
 1. Push to the branch (`git push origin feature/YourFeature`).
 1. Open a new Pull Request.
 
