@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #chat {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            height: 300px;
+            overflow-y: scroll;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .message {
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 10px;
+            display: inline-block;
+            max-width: 80%; /* Prevent message bubbles from stretching too wide */
+            word-wrap: break-word; /* Ensure long words do not overflow */
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            float: right; /* Align user messages to the right */
+            clear: both; /* Prevent floating elements from colliding */
+        }
+        .bot-message {
+            background-color: #e9e9eb;
+            color: black;
+            float: left; /* Align bot messages to the left */
+            clear: both; /* Prevent floating elements from colliding */
+        }
+        #userInput {
+            padding: 10px;
+            width: calc(100% - 80px);
+            margin-right: -4px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        #sendButton {
+            padding: 10px;
+            width: 60px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #chat:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        #inputArea {
+            display: flex; /* Use flexbox for input area layout */
+            margin: 10px 0; /* Add some margin around the input area */
+        }
+        #userInput {
+            flex-grow: 1; /* Input field takes up remaining space */
+            margin-right: 4px; /* Add space between input field and buttons */
+            /* Other styles... */
+        }
+        .button {
+            padding: 10px 20px; /* Slightly larger horizontal padding for buttons */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em; /* Set font size to match user input text */
+        }
+        #sendButton {
+            background-color: #007bff;
+            color: white;
+        }
+        #clearButton {
+            background-color: #dc3545; /* Bootstrap 'danger' color for clear button */
+            color: white;
+            margin-left: 4px; /* Add space between buttons */
+        }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+    <div id="inputArea">
+        <input type="text" id="userInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+        <label>
+            <input type="checkbox" id="streamCheckbox" checked>
+            Stream
+        </label>
+        <button id="sendButton" class="button" onclick="sendMessage()">Send</button>
+        <button id="clearButton" class="button" onclick="clearChat()">Clear</button>
+    </div>
+    <script>
+        let currentBotMessageDiv; // This will hold the div for the AI's responses
+        let eventSource; // This will hold the current EventSource connection
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const message = userInput.value;
+            const streamEnabled = document.getElementById('streamCheckbox').checked;
+            userInput.value = '';
+
+            appendMessage(message, 'user-message');
+
+            if (!currentBotMessageDiv) {
+                currentBotMessageDiv = createMessageDiv('bot-message');
+            } else {
+                currentBotMessageDiv.textContent = '';
+            }
+
+            // Close the existing EventSource connection if it exists
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            // Send the user's message to the server
+            const response = await fetch('http://localhost:3000/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: message, stream: streamEnabled })
+            });
+
+            if (!streamEnabled) {
+                // Handle non-streaming response
+                const responseData = await response.json();
+                console.log("here", responseData.meta)
+                const modelNameElement = document.createElement('div');
+                modelNameElement.innerHTML = `<b>${responseData.meta.model}:</b><br>`;
+                currentBotMessageDiv.appendChild(modelNameElement);
+                currentBotMessageDiv.setAttribute('data-model-appended', 'true');
+
+                // currentBotMessageDiv.textContent = responseData.content;
+                currentBotMessageDiv.innerHTML += responseData.content;
+
+                currentBotMessageDiv = null;
+            } else {
+                // Initialize a new EventSource connection for streaming
+                eventSource = new EventSource('http://localhost:3000/stream');
+                eventSource.onmessage = function(event) {
+                    const parsedData = JSON.parse(event.data);
+
+                    if (!currentBotMessageDiv.hasAttribute('data-model-appended')) {
+                        const modelNameElement = document.createElement('div');
+                        modelNameElement.innerHTML = `<b>${parsedData.meta.model}:</b><br>`;
+                        currentBotMessageDiv.appendChild(modelNameElement);
+                        currentBotMessageDiv.setAttribute('data-model-appended', 'true');
+                    }
+
+                    currentBotMessageDiv.innerHTML += parsedData.content;
+                };
+
+                eventSource.onerror = function() {
+                    eventSource.close();
+                    currentBotMessageDiv = null;
+                };
+            }
+        }
+
+
+        function createMessageDiv(className) {
+            const chatDiv = document.getElementById('chat');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${className}`;
+            chatDiv.appendChild(messageDiv);
+            return messageDiv;
+        }
+
+        function appendMessage(message, className) {
+            const chatDiv = document.getElementById('chat');
+            const messageDiv = createMessageDiv(className);
+            messageDiv.textContent = message;
+            chatDiv.scrollTop = chatDiv.scrollHeight; // Auto-scroll to the latest message
+        }
+
+        // Function to clear the chat
+        function clearChat() {
+            const chatDiv = document.getElementById('chat');
+            chatDiv.innerHTML = ''; // Remove all child nodes
+            currentBotMessageDiv = null; // Reset the current bot message div
+        }
+    </script>
+</body>
+</html>
