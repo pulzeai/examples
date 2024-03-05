@@ -11,7 +11,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
             margin: 0;
             background-color: #f5f5f5;
             padding-top: 0;
@@ -29,7 +28,14 @@
         .search-box {
             display: flex;
             align-items: center;
+            margin: auto; /* Center in the viewport */
             position: relative;
+        }
+        .centered-search {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Use viewport height to center vertically */
         }
         .search-box i.material-icons {
             position: absolute;
@@ -71,11 +77,18 @@
         #suggestions li:hover {
             background-color: #eeeeee;
         }
+        /* Ensure that .search-result takes full width and is not flex */
         .search-result {
             text-align: left;
             padding: 12px;
             border-bottom: 1px solid #ddd;
+            display: block; /* Ensures each result is on a new line */
         }
+        /* .search-result {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        } */
         .search-result h3 {
             margin: 0;
             padding: 0;
@@ -157,6 +170,11 @@
         const searchContainer = document.getElementById('searchContainer');
         const searchResultsContainer = document.getElementById('searchResults');
 
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a class to center the search bar initially
+            document.body.classList.add('centered-search');
+        });
+
         searchInput.addEventListener('input', () => {
             const query = searchInput.value;
             if (!query) {
@@ -171,6 +189,8 @@
         searchInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
                 handleSearch();
+                // Remove the class to un-center the search bar
+                document.body.classList.remove('centered-search');
             }
         });
 
@@ -215,22 +235,57 @@
             suggestionsBox.style.display = 'block';
         }
 
+        // function displaySearchResults(data) {
+        //     searchResultsContainer.innerHTML = '';
+        //     const div = document.createElement('div');
+        //     div.className = 'search-result';
+        //     const content = data.content; // assuming 'content' is a property that holds the text
+        //     console.log(data.meta.metadata.scores.best_models)
+
+        //     div.innerHTML = `
+        //         <h3>Search Result Title</h3>
+        //         <div class="link">${data.model}</div>
+        //         <div class="snippet">
+        //             <span class="text">${content}</span>
+        //         </div>
+        //     `;
+
+        //     searchResultsContainer.appendChild(div);
+        // }
+
         function displaySearchResults(data) {
-            searchResultsContainer.innerHTML = '';
+            searchResultsContainer.innerHTML = ''; // Clear existing results
+
+            // Display the initial result
+            const initialDiv = createResultDiv(data.initial, 'Best Result');
+            searchResultsContainer.appendChild(initialDiv);
+
+            // Iterate over each model result and create a new div for it
+            data.models.forEach((modelResult, index) => {
+                const modelDiv = createResultDiv(modelResult, `Result ${index + 2}`);
+                searchResultsContainer.appendChild(modelDiv);
+            });
+        }
+
+        function createResultDiv(resultData, title) {
+            // Assuming 'resultData.choices[0].message.content' holds the text content you want to display
+            const content = resultData.choices[0].message.content;
+            const model = resultData.model;
+            const latency = resultData.metadata.latency; // Adjust according to the actual path to latency in your data
+            const costs = resultData.metadata.costs.total_tokens
             const div = document.createElement('div');
             div.className = 'search-result';
-            const content = data.content; // assuming 'content' is a property that holds the text
-            console.log(data.meta.metadata.scores.best_models)
 
             div.innerHTML = `
-                <h3>Search Result Title</h3>
-                <div class="link">${data.model}</div>
+                <h3>${title}</h3>
+                <div class="link">${model}</div>
                 <div class="snippet">
                     <span class="text">${content}</span>
+                    <div class="link">Latency: ${latency.toFixed(3)}s Costs: $${costs}</div>
                 </div>
             `;
 
-            searchResultsContainer.appendChild(div);
+            return div;
         }
 
         document.addEventListener('click', function(event) {

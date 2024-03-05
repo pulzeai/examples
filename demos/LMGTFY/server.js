@@ -77,12 +77,42 @@ if (parsedUrl.pathname === '/' && req.method === 'GET') {
             const completion = await openai.chat.completions.create(config);
             if (completion && completion.choices && completion.choices.length > 0) {
                 const choice = completion.choices[0];
+
+                // Assume 'completion' is the result from the initial API call
+                const bestModels = completion.metadata.scores.best_models;
+                const currentModel = completion.model;
+
+               // Map over the array and filter out the current model
+                const modelNames = bestModels
+                .map(modelObject => Object.keys(modelObject)[0]) // Extract model names
+                .filter(modelName => modelName !== currentModel); // Remove current model
+
+                // Create an array of promises for each subsequent API call
+                const modelPromises = modelNames.map(modelName => {
+                    const newConfig = { ...config, model: modelName };
+                    return openai.chat.completions.create(newConfig);
+                });
+
+                // Wait for all promises to resolve
+                const modelResults = await Promise.all(modelPromises);
+
+                // Construct the final response with all data
+                const finalResponse = {
+                    initial: completion,
+                    models: modelResults, // This will be an array of results from the best models
+                };
+
+                // Send the final response
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({
-                    content: choice.message.content,
-                    model: completion.model,
-                    meta: completion
-                }));
+                res.end(JSON.stringify(finalResponse));
+
+                console.log(finalResponse)
+                // res.writeHead(200, { 'Content-Type': 'application/json' });
+                // res.end(JSON.stringify({
+                //     content: choice.message.content,
+                //     model: completion.model,
+                //     meta: completion
+                // }));
             } else {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ content: 'No response from AI.' }));
