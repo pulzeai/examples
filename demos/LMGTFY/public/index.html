@@ -152,6 +152,11 @@
             cursor: pointer;
             text-decoration: underline;
         }
+        .search-time-taken {
+            color: #808080; /* Light grey color */
+            margin-bottom: 10px; /* Add some space below the time taken div */
+            font-size: 14px; /* Smaller font size for the time taken text */
+        }
 </style>
 </head>
 <body>
@@ -202,13 +207,22 @@
                 searchContainer.classList.add('fixed', 'search-container-top');
                 document.body.style.paddingTop = searchContainer.offsetHeight + 'px';
             }
+
+             // Start measuring time
+            const startTime = performance.now();
+
             const response = await fetch(`http://localhost:3000/search?query=${encodeURIComponent(query)}`);
             if (!response.ok) {
                 console.error('Failed to fetch search results');
                 return;
             }
             const data = await response.json();
-            displaySearchResults(data);
+
+            // Stop measuring time
+            const endTime = performance.now();
+            const searchDuration = (endTime - startTime).toFixed(2); // Duration in milliseconds
+
+            displaySearchResults(data, searchDuration);
         }
 
         async function fetchAutocompleteSuggestions(query) {
@@ -253,8 +267,15 @@
         //     searchResultsContainer.appendChild(div);
         // }
 
-        function displaySearchResults(data) {
+        function displaySearchResults(data, searchDuration) {
             searchResultsContainer.innerHTML = ''; // Clear existing results
+
+
+            // Create a div to display the total time taken for requests
+            const timeTakenDiv = document.createElement('div');
+            timeTakenDiv.className = 'search-time-taken';
+            timeTakenDiv.textContent = `About ${data.models.length + 1} results (${searchDuration} milliseconds)`;
+            searchResultsContainer.appendChild(timeTakenDiv);
 
             // Display the initial result
             const initialDiv = createResultDiv(data.initial, 'Best Result');
