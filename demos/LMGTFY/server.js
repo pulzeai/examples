@@ -8,7 +8,7 @@ const path = require('path');
 // Initialize OpenAI with your API key
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    baseURL: "https://api.dev.pulze.ai/v1",
+    baseURL: "https://api.pulze.ai/v1",
     defaultHeaders: {
       "Pulze-Labels": JSON.stringify({ "foo": "bar" }),
       "Pulze-Weights": JSON.stringify({ "cost": 0.2, "quality": 0.8, "latency": 0 }),
