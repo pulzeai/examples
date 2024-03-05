@@ -43,7 +43,7 @@ if (parsedUrl.pathname === '/' && req.method === 'GET') {
     }
 
     // Simulate fetching autocomplete suggestions (replace with your actual logic)
-    const suggestions = ['Suggestion 1', 'Suggestion 2', 'Suggestion 3'];
+    const suggestions = ['1x7 = ?', 'How do you make ramen?', 'Who is CEO of OpenAI?'];
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(suggestions));
@@ -105,14 +105,6 @@ if (parsedUrl.pathname === '/' && req.method === 'GET') {
                 // Send the final response
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(finalResponse));
-
-                console.log(finalResponse)
-                // res.writeHead(200, { 'Content-Type': 'application/json' });
-                // res.end(JSON.stringify({
-                //     content: choice.message.content,
-                //     model: completion.model,
-                //     meta: completion
-                // }));
             } else {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ content: 'No response from AI.' }));

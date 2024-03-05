@@ -84,11 +84,6 @@
             border-bottom: 1px solid #ddd;
             display: block; /* Ensures each result is on a new line */
         }
-        /* .search-result {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        } */
         .search-result h3 {
             margin: 0;
             padding: 0;
@@ -140,11 +135,6 @@
         }
         .snippet {
             cursor: pointer;
-            /* Remove or comment out the next three lines to allow text wrapping and prevent shortening */
-            /* white-space: nowrap; */
-            /* overflow: hidden; */
-            /* text-overflow: ellipsis; */
-            /* Adjust the max-width to fit the container or set it to none */
             max-width: none; /* This allows the text to take as much width as needed */
         }
         .show-more {
@@ -220,7 +210,7 @@
 
             // Stop measuring time
             const endTime = performance.now();
-            const searchDuration = (endTime - startTime).toFixed(2); // Duration in milliseconds
+            const searchDuration = ((endTime - startTime) / 1000).toFixed(2); // Duration in milliseconds
 
             displaySearchResults(data, searchDuration);
         }
@@ -249,24 +239,6 @@
             suggestionsBox.style.display = 'block';
         }
 
-        // function displaySearchResults(data) {
-        //     searchResultsContainer.innerHTML = '';
-        //     const div = document.createElement('div');
-        //     div.className = 'search-result';
-        //     const content = data.content; // assuming 'content' is a property that holds the text
-        //     console.log(data.meta.metadata.scores.best_models)
-
-        //     div.innerHTML = `
-        //         <h3>Search Result Title</h3>
-        //         <div class="link">${data.model}</div>
-        //         <div class="snippet">
-        //             <span class="text">${content}</span>
-        //         </div>
-        //     `;
-
-        //     searchResultsContainer.appendChild(div);
-        // }
-
         function displaySearchResults(data, searchDuration) {
             searchResultsContainer.innerHTML = ''; // Clear existing results
 
@@ -274,7 +246,7 @@
             // Create a div to display the total time taken for requests
             const timeTakenDiv = document.createElement('div');
             timeTakenDiv.className = 'search-time-taken';
-            timeTakenDiv.textContent = `About ${data.models.length + 1} results (${searchDuration} milliseconds)`;
+            timeTakenDiv.textContent = `About ${data.models.length + 1} results (${searchDuration} seconds)`;
             searchResultsContainer.appendChild(timeTakenDiv);
 
             // Display the initial result
