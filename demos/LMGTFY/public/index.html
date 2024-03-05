@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Let Me Answer That For You</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            background-color: #f5f5f5;
+            padding-top: 0;
+        }
+        .divider {
+            height: 1px;
+            background-color: #ddd;
+            margin-bottom: 20px; /* Add margin to separate the divider from the search results */
+        }
+        #searchContainer {
+            text-align: center;
+            width: 600px;
+            position: relative;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            margin: auto; /* Center in the viewport */
+            position: relative;
+        }
+        .centered-search {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Use viewport height to center vertically */
+        }
+        .search-box i.material-icons {
+            position: absolute;
+            left: 10px;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 16px 16px 16px 40px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        #searchInput:focus {
+            border-color: #6200ea;
+        }
+        #suggestions {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 0 0 4px 4px;
+            background-color: #fff;
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            width: 100%;
+            top: 55px;
+            left: 0;
+        }
+        #suggestions li {
+            padding: 12px 24px;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.2s;
+        }
+        #suggestions li:hover {
+            background-color: #eeeeee;
+        }
+        /* Ensure that .search-result takes full width and is not flex */
+        .search-result {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            display: block; /* Ensures each result is on a new line */
+        }
+        .search-result h3 {
+            margin: 0;
+            padding: 0;
+            color: #1a0dab;
+        }
+        .search-result .link {
+            color: #006621;
+            font-size: 14px;
+        }
+        .search-result .snippet {
+            color: #545454;
+        }
+        .search-container-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            padding: 12px 0;
+            border-bottom: 1px solid #ddd;
+            z-index: 100;
+        }
+        .search-results-container {
+            margin-top: 0;
+            padding-top: 0;
+        }
+        #searchContainer.fixed {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #fff;
+            box-shadow: 0 2px 2px -2px gray;
+            z-index: 10;
+        }
+        #searchResults {
+            padding-top: 20px;
+        }
+        .search-container-top {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .search-box {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 10px;
+        }
+        .snippet {
+            cursor: pointer;
+            max-width: none; /* This allows the text to take as much width as needed */
+        }
+        .show-more {
+            color: #6200ea;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .search-time-taken {
+            color: #808080; /* Light grey color */
+            margin-bottom: 10px; /* Add some space below the time taken div */
+            font-size: 14px; /* Smaller font size for the time taken text */
+        }
+</style>
+</head>
+<body>
+    <div id="searchContainer">
+        <div class="search-box">
+            <i class="material-icons">search</i>
+            <input type="text" id="searchInput" placeholder="Ask me anything..." autocomplete="off">
+        </div>
+        <ul id="suggestions"></ul>
+    </div>
+    <div class="divider"></div> <!-- Add a divider element here -->
+    <div id="searchResults" class="search-results-container"></div>
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsBox = document.getElementById('suggestions');
+        const searchContainer = document.getElementById('searchContainer');
+        const searchResultsContainer = document.getElementById('searchResults');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a class to center the search bar initially
+            document.body.classList.add('centered-search');
+        });
+
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value;
+            if (!query) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+            fetchAutocompleteSuggestions(query).then(suggestions => {
+                displaySuggestions(suggestions);
+            });
+        });
+
+        searchInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                handleSearch();
+                // Remove the class to un-center the search bar
+                document.body.classList.remove('centered-search');
+            }
+        });
+
+        async function handleSearch() {
+            const query = searchInput.value;
+            if (!query) return;
+            suggestionsBox.style.display = 'none';
+            if (!searchContainer.classList.contains('fixed')) {
+                searchContainer.classList.add('fixed', 'search-container-top');
+                document.body.style.paddingTop = searchContainer.offsetHeight + 'px';
+            }
+
+             // Start measuring time
+            const startTime = performance.now();
+
+            const response = await fetch(`http://localhost:3000/search?query=${encodeURIComponent(query)}`);
+            if (!response.ok) {
+                console.error('Failed to fetch search results');
+                return;
+            }
+            const data = await response.json();
+
+            // Stop measuring time
+            const endTime = performance.now();
+            const searchDuration = ((endTime - startTime) / 1000).toFixed(2); // Duration in milliseconds
+
+            displaySearchResults(data, searchDuration);
+        }
+
+        async function fetchAutocompleteSuggestions(query) {
+            const response = await fetch(`http://localhost:3000/autocomplete?query=${encodeURIComponent(query)}`);
+            if (!response.ok) {
+                console.error('Failed to fetch autocomplete suggestions');
+                return [];
+            }
+            return response.json();
+        }
+
+        function displaySuggestions(suggestions) {
+            suggestionsBox.innerHTML = '';
+            suggestions.forEach(suggestion => {
+                const li = document.createElement('li');
+                li.textContent = suggestion;
+                li.addEventListener('click', () => {
+                    searchInput.value = suggestion;
+                    suggestionsBox.style.display = 'none';
+                    handleSearch();
+                });
+                suggestionsBox.appendChild(li);
+            });
+            suggestionsBox.style.display = 'block';
+        }
+
+        function displaySearchResults(data, searchDuration) {
+            searchResultsContainer.innerHTML = ''; // Clear existing results
+
+
+            // Create a div to display the total time taken for requests
+            const timeTakenDiv = document.createElement('div');
+            timeTakenDiv.className = 'search-time-taken';
+            timeTakenDiv.textContent = `About ${data.models.length + 1} results (${searchDuration} seconds)`;
+            searchResultsContainer.appendChild(timeTakenDiv);
+
+            // Display the initial result
+            const initialDiv = createResultDiv(data.initial, 'Best Result');
+            searchResultsContainer.appendChild(initialDiv);
+
+            // Iterate over each model result and create a new div for it
+            data.models.forEach((modelResult, index) => {
+                const modelDiv = createResultDiv(modelResult, `Result ${index + 2}`);
+                searchResultsContainer.appendChild(modelDiv);
+            });
+        }
+
+        function createResultDiv(resultData, title) {
+            // Assuming 'resultData.choices[0].message.content' holds the text content you want to display
+            const content = resultData.choices[0].message.content;
+            const model = resultData.model;
+            const latency = resultData.metadata.latency; // Adjust according to the actual path to latency in your data
+            const costs = resultData.metadata.costs.total_tokens
+            const div = document.createElement('div');
+            div.className = 'search-result';
+
+            div.innerHTML = `
+                <h3>${title}</h3>
+                <div class="link">${model}</div>
+                <div class="snippet">
+                    <span class="text">${content}</span>
+                    <div class="link">Latency: ${latency.toFixed(3)}s Costs: $${costs}</div>
+                </div>
+            `;
+
+            return div;
+        }
+
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('toggle')) {
+                toggleSnippet(event);
+            }
+        });
+    </script>
+
+</body>
+</html>

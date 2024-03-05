@@ -1,0 +1,17 @@
+{
+  "name": "lmgtfy",
+  "version": "1.0.0",
+  "description": "\"Let Me Answer That For You\" service, inspired by \"Let Me Google That For You\" (LMGTFY)",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Pulze.ai Inc.",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "nodemon": "^3.1.0",
+    "openai": "^4.28.4"
+  }
+}
